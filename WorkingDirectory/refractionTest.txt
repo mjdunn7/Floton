@@ -1,0 +1,16 @@
+eye 50 50 100
+look 50 50 10
+up 0 1 0
+d 5
+bounds -2 -2 2 2
+res 512 512
+recursionLevel 6
+ambient 0.2 0.2 0.2
+eta 1.0
+light 20 100 100 1 0.75 0.75 0.75
+light 80 100 100 1 0.75 0.75 0.75
+#x, y and z radius, Ka_red, Ka_green, Ka_blue, Kd_red, Kd_green, Kd_blue, Ks_red, Ks_green, Ks_blue Kr_red, Kr_green, Kr_blue, Ko_red, Ko_green, Ko_blue, refraction index (eta)
+sphere 50 50 50 9 0.2 0.2 0.2 0.6 0.6 0.6 0.5 0.5 0.5 0.9 0.9 0.9 .5 .5 .5 5
+sphere 35 60 20 9 1.0 0.0 0.0 1.0 0.0 0.0 1.0 1.0 1.0 0.9 0.9 0.9 1.0 1.0 1.0 1.3
+sphere 65 60 20 9 0.0 1.0 0.0 0.0 1.0 0.0 1.0 1.0 1.0 0.9 0.9 0.9 1.0 1.0 1.0 1.3
+sphere 50 35 20 9 0.0 0.0 1.0 0.0 0.0 1.0 1.0 1.0 1.0 0.9 0.9 0.9 1.0 1.0 1.0 1.3

@@ -1,0 +1,3 @@
+/home/mdunn/CLionProjects/cs410/cmake-build-debug/CMakeFiles/rebuild_cache.dir
+/home/mdunn/CLionProjects/cs410/cmake-build-debug/CMakeFiles/edit_cache.dir
+/home/mdunn/CLionProjects/cs410/cmake-build-debug/CMakeFiles/cs410.dir
