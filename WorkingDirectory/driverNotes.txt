@@ -1,1 +1,0 @@
-x, y and z coordinates, radius of the sphere, Ka_red, Ka_green, Ka_blue ambient coefficients, diffuse Kd_red, Kd_green, Kd_blue, Ks_red, Ks_green, Ks_blue specular coefficients. Kr_red, Kr_green, Kr_blue attenuation coefficients.
