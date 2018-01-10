@@ -49,7 +49,7 @@ public:
     void performTransformation(Transformation* transformation);
     void parseFace(std::string &rawFace, std::string& materialName);
 
-    std::vector<Triangle*>* getTriangles();
+    const std::vector<Triangle*>* getTriangles();
 
 
 };

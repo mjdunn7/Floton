@@ -8,7 +8,7 @@
 #include "Sphere.h"
 #include "Lighting.h"
 
-CameraPictureTaker::CameraPictureTaker(CameraSpecification *specs, std::vector<Object3D>* models, Lighting* lighting, std::vector<Sphere>* spheres) {
+CameraPictureTaker::CameraPictureTaker(const CameraSpecification *specs, std::vector<Object3D>* models, const Lighting* lighting, const std::vector<Sphere>* spheres) {
     m_specs = specs;
     m_lighting = lighting;
 
@@ -44,7 +44,7 @@ CameraPictureTaker::CameraPictureTaker(CameraSpecification *specs, std::vector<O
         m_models = models;
     }
 
-    calculateDistances();
+    calculatePixelColors();
 
 }
 
@@ -84,7 +84,7 @@ Eigen::Matrix<double, 3, 1> *CameraPictureTaker::generatePixelPoint(int row, int
     return pixel;
 }
 
-void CameraPictureTaker::calculateDistances() {
+void CameraPictureTaker::calculatePixelColors() {
     double res = m_height * m_width;
     double pixelsCompleted = 0;
     int previousPercentage = 0;
@@ -124,6 +124,7 @@ void CameraPictureTaker::calculateDistances() {
 
                     grandAccumulator += accumulator;
                 }
+
                 delete pixelPoint;
                 ++pixelsCompleted;
                 grandAccumulator = grandAccumulator / m_specs->focusRaysPerPixel;
@@ -209,7 +210,7 @@ void CameraPictureTaker::rayTrace(Eigen::Vector3d rayStart, Eigen::Vector3d rayD
     m_pointToCameraV << 0, 0, 0;
     m_attenuation << 1, 1, 1;
     m_color << 0, 0, 0;
-    Sphere* hitSphere;
+    const Sphere* hitSphere;
 
     Eigen::Vector3d tV;
 
@@ -220,7 +221,7 @@ void CameraPictureTaker::rayTrace(Eigen::Vector3d rayStart, Eigen::Vector3d rayD
 
     int sphereHitIndex;
 
-    t = -1;
+    bool hasHitYet = false;
 
     Triangle* hitTriangle;
 
@@ -241,8 +242,9 @@ void CameraPictureTaker::rayTrace(Eigen::Vector3d rayStart, Eigen::Vector3d rayD
 
         if(newt <= 0.00001)
             continue;
-        if (newt < t || t == -1) {
+        if (newt < t || !hasHitYet) {
             //this is an intersection point
+            hasHitYet = true;
             didHitTriangle = false;
             didHitSphere = true;
             sphereHitIndex = k;
@@ -255,7 +257,7 @@ void CameraPictureTaker::rayTrace(Eigen::Vector3d rayStart, Eigen::Vector3d rayD
 
     //for every model
     for (int m = 0; m < m_models->size(); ++m) {
-        std::vector<Triangle *> *triangles = m_models->at(m).getTriangles();
+        const std::vector<Triangle *> *triangles = m_models->at(m).getTriangles();
 
         //for every triangle in the model
         for (int k = 0; k < triangles->size(); ++k) {
@@ -299,11 +301,12 @@ void CameraPictureTaker::rayTrace(Eigen::Vector3d rayStart, Eigen::Vector3d rayD
             if (newt <= 0.001)
                 continue;
 
-            if (newt < t || t == -1) {
+            if (newt < t || !hasHitYet) {
                 //we hit an intersection
                 t = newt;
                 didHitSphere = false;
                 didHitTriangle = true;
+                hasHitYet = true;
                 hitTriangle = curTri;
             }
 
@@ -319,7 +322,7 @@ void CameraPictureTaker::rayTrace(Eigen::Vector3d rayStart, Eigen::Vector3d rayD
         processHitSphere(sphereHitIndex, t, rayStart, rayDirection, intersectionPoint);
     }
 
-    if(t != -1){
+    if(hasHitYet){
         //we hit a point
         if(level > 0){
             Eigen::Vector3d reflectionRay = (2 * m_normalVector.dot(m_pointToCameraV) * m_normalVector) - m_pointToCameraV;
@@ -395,7 +398,7 @@ bool CameraPictureTaker::rayIntersectsSurface(Eigen::Vector3d *rayStart, Eigen::
 
     //for every model
     for (int m = 0; m < m_models->size(); ++m) {
-        std::vector<Triangle *> *triangles = m_models->at(m).getTriangles();
+        const std::vector<Triangle*> *triangles = m_models->at(m).getTriangles();
 
         //for every triangle in the model
         for (int k = 0; k < triangles->size(); ++k) {
@@ -441,14 +444,12 @@ bool CameraPictureTaker::rayIntersectsSurface(Eigen::Vector3d *rayStart, Eigen::
 
             //we hit an intersection
             return true;
-
         }
-
     }
     return false;
 }
 
-bool CameraPictureTaker::refract(Eigen::Vector3d* rayStart, Eigen::Vector3d* rayDirection, Sphere* sphere, double refractionIndexEnter, double refractionIndexExit) {
+bool CameraPictureTaker::refract(Eigen::Vector3d* rayStart, Eigen::Vector3d* rayDirection, const Sphere* sphere, double refractionIndexEnter, double refractionIndexExit) {
     Eigen::Vector3d norm1 = *rayStart - *sphere->getCenterPoint();
     norm1.normalize();
     Eigen::Vector3d T1 = refractRay(rayDirection, &norm1, refractionIndexExit, refractionIndexEnter);

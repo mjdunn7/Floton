@@ -27,7 +27,7 @@ public:
         objAttenuation << r, g, b;
     }
 
-    Eigen::Vector3d getObjAttenuation(){
+    Eigen::Vector3d getObjAttenuation() const {
         return objAttenuation;
     }
 };

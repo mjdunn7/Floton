@@ -27,11 +27,11 @@ public:
         ambience << r, g, b;
     }
 
-    inline Eigen::Vector3d& getAmbience(){
+    inline const Eigen::Vector3d & getAmbience() const {
         return ambience;
     }
 
-    inline std::vector<Light>& getLights(){
+    inline const std::vector<Light>& getLights() const {
         return lights;
     }
 };

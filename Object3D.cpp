@@ -180,8 +180,6 @@ void Object3D::printToFile() {
 }
 
 
-
-//Returns pointer to an array of triangle
 void Object3D::parseFace(std::string &rawFace, std::string& materialName) {
     std::vector<std::string> words;
 
@@ -349,7 +347,7 @@ void Object3D::parseMaterialsFile(std::string& fileName) {
     }
 }
 
-std::vector<Triangle*>* Object3D::getTriangles() {
+const std::vector<Triangle*>* Object3D::getTriangles() {
     if(isTrianglesCalculated)
         return &m_triangles;
 

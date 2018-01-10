@@ -56,35 +56,35 @@ public:
         m_attenuationCoefficients << a, b, c;
     }
 
-    inline Eigen::Vector3d* getCenterPoint(){
+    inline const Eigen::Vector3d* getCenterPoint() const {
         return &m_centerPoint;
     }
 
-    inline Eigen::Vector3d* getOpacity(){
+    inline const Eigen::Vector3d* getOpacity() const{
         return &m_opacityCoefficients;
     }
 
-    inline double getOpacitySum(){
+    inline double getOpacitySum() const{
         return m_opacityCoefficients(0) + m_opacityCoefficients(1) + m_opacityCoefficients(2);
     }
 
-    inline Eigen::Vector3d* getDiffuseCoef(){
+    inline const Eigen::Vector3d* getDiffuseCoef() const{
         return &m_diffuseCoefficients;
     }
 
-    inline Eigen::Vector3d* getSpecularCoef(){
+    inline const Eigen::Vector3d* getSpecularCoef() const{
         return &m_specularCoefficients;
     }
 
-    inline Eigen::Vector3d getAttenuationCoef(){
+    inline const Eigen::Vector3d getAttenuationCoef() const{
         return m_attenuationCoefficients;
     }
 
-    inline Eigen::Vector3d* getAmbientCoef(){
+    inline const Eigen::Vector3d* getAmbientCoef() const{
         return &m_ambientCoefficients;
     }
 
-    inline double getRadius(){
+    inline double getRadius() const{
         return m_radius;
     }
 

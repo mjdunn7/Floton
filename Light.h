@@ -18,11 +18,11 @@ public:
         rgb << r, g, b;
     }
 
-    inline Eigen::Vector3d getPosition(){
+    inline const Eigen::Vector3d& getPosition() const{
         return position;
     }
 
-    inline Eigen::Vector3d getRGB(){
+    inline const Eigen::Vector3d& getRGB() const{
         return rgb;
     }
 };

@@ -15,7 +15,7 @@
 class CameraPictureTaker {
 private:
     std::vector<Object3D>* m_models;
-    CameraSpecification* m_specs;
+    const CameraSpecification* m_specs;
 
     Eigen::Vector3d m_eyePoint;
     Eigen::Vector3d m_lookVector;
@@ -38,26 +38,26 @@ private:
     int m_height;
     int m_width;
 
-    std::vector<Sphere>* m_spheres;
+    const std::vector<Sphere>* m_spheres;
 
-    Lighting* m_lighting;
+    const Lighting* m_lighting;
 
     //Member functions
-    void calculateDistances();
+    void calculatePixelColors();
     void rayTrace(Eigen::Vector3d rayStart, Eigen::Vector3d rayDirection, Eigen::Vector3d refatt, Eigen::Vector3d* accumulator, int level);
     Eigen::Vector3d refractRay(Eigen::Vector3d* rayDirection, Eigen::Vector3d* surfaceNormal, double refractionIndexEnter, double refractionIndexExit);
-    bool refract(Eigen::Vector3d* rayStart, Eigen::Vector3d* rayDirection, Sphere* sphere, double refractionIndexEnter, double refractionIndexExit);
+    bool refract(Eigen::Vector3d* rayStart, Eigen::Vector3d* rayDirection, const Sphere* sphere, double refractionIndexEnter, double refractionIndexExit);
     void processHitSphere(int index, double t, Eigen::Vector3d& rayStart, Eigen::Vector3d& rayDirection, Eigen::Vector3d& intersectionPoint);
     void processHitTriangle(Triangle* hitTriangle, double t, Eigen::Vector3d& rayStart, Eigen::Vector3d& rayDirection, Eigen::Vector3d& intersectionPoint );
 
     void convertColorToPixel(int& pixelIndex, Eigen::Vector3d* color);
     Eigen::Matrix<double, 3, 1>* generatePixelPoint(int row, int col, double offset);
-    Eigen::Matrix<double, 3, 1>* generatePixelPoint(int row, int col); //for when the offset is zero.
+    Eigen::Matrix<double, 3, 1>* generatePixelPoint(int row, int col); //overloaded function for when the offset is zero.
 
     bool rayIntersectsSurface(Eigen::Vector3d *rayStart, Eigen::Vector3d *rayDirection);
 
 public:
-    CameraPictureTaker(CameraSpecification* specs, std::vector<Object3D>* models, Lighting* lighting, std::vector<Sphere>* spheres);
+    CameraPictureTaker(const CameraSpecification* specs, std::vector<Object3D>* models, const Lighting* lighting, const std::vector<Sphere>* spheres);
     ~CameraPictureTaker();
 
     void printImageToFile(std::string& fileName);
