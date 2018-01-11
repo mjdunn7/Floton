@@ -1,5 +1,5 @@
 cmake_minimum_required(VERSION 3.8)
-project(Floton.sh)
+project(Floton)
 
 set(CMAKE_CXX_STANDARD 14)
 add_compile_options(-O3)
