@@ -9,3 +9,7 @@ include_directories(Eigen)
 file(GLOB SOURCE_FILES src/*.cpp src/*.h)
 
 add_executable(Floton.sh ${SOURCE_FILES})
+
+set(EXECUTABLE_OUTPUT_PATH ${EXECUTABLE_OUTPUT_PATH}..)
+install(TARGETS ${EXECUTABLE_NAME}
+        RUNTIME DESTINATION ${EXECUTABLE_OUTPUT_PATH}/..)
