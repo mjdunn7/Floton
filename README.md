@@ -37,7 +37,7 @@ An executable binary file should then appear in the top directory. To render an 
   * Image output in .ppm format
   
 ### Development Guide
-Floton was originally made using the C-Lion IDE, but the use of cmake allows for versitile development styles. To get started with C-Lion, simply click file->open in the IDE and navigate to the cloned Floton Github repository. Otherwise, the source code and be found in the SRC folder and edited with your text editor of choice. To compile, run the following commands from the top directory:
+Floton was originally made using the C-Lion IDE, but the use of cmake allows for versitile development styles. To get started with C-Lion, simply click file->open in the IDE and navigate to the cloned Floton Github repository. Otherwise, the source code and be found in the SRC folder and edited with your text editor of choice. To compile, run the following commands from the top directory, the first command is only necessary the first time you run:
 ```
 cmake -B./debug-build -H. -DCMAKE_BUILD_TYPE=Debug
 cmake --build ./debug-build -- install
