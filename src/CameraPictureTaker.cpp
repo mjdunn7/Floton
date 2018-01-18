@@ -7,6 +7,7 @@
 #include "CameraPictureTaker.h"
 #include "Sphere.h"
 #include "Lighting.h"
+#include "RayTraceData.h"
 
 CameraPictureTaker::CameraPictureTaker(const CameraSpecification *specs, std::vector<Object3D>* models, const Lighting* lighting, const std::vector<Sphere>* spheres) {
     m_specs = specs;
@@ -112,17 +113,14 @@ void CameraPictureTaker::calculatePixelColors() {
 
                     Ray ray(offsetPixelPoint, pointInFocus - *offsetPixelPoint);
 
-                    Eigen::Vector3d accumulator;
-                    accumulator.setZero();
-                    Eigen::Vector3d refatt;
-                    refatt.setConstant(1);
-                    m_attenuation.setConstant(1);
-                    m_color.setZero();
+                    RayTraceData data;
+                    *data.getRayStart() = *ray.getStartPoint();
+                    *data.getRayDirection() = *ray.getDirectionVector();
+                    data.level = m_specs->recursionLevel;
 
-                    rayTrace(*ray.getStartPoint(), *ray.getDirectionVector(),
-                             refatt, &accumulator, m_specs->recursionLevel);
+                    rayTrace(data);
 
-                    grandAccumulator += accumulator;
+                    grandAccumulator += *data.getColorAccum();
                 }
 
                 delete pixelPoint;
@@ -134,17 +132,14 @@ void CameraPictureTaker::calculatePixelColors() {
                 Eigen::Matrix<double, 3, 1> *pixelPoint = generatePixelPoint(j, i, 0);
                 Ray ray(pixelPoint, *pixelPoint - m_eyePoint);
 
-                Eigen::Vector3d accumulator;
-                accumulator.setZero();
-                Eigen::Vector3d refatt;
-                refatt << 1, 1, 1;
-                m_attenuation << 1, 1, 1;
-                m_color << 0, 0, 0;
+                RayTraceData data;
+                *data.getRayStart() = *ray.getStartPoint();
+                *data.getRayDirection() = *ray.getDirectionVector();
+                data.level = m_specs->recursionLevel;
+                rayTrace(data);
 
-                rayTrace(*ray.getStartPoint(), *ray.getDirectionVector(),
-                         refatt, &accumulator, m_specs->recursionLevel);
                 ++pixelsCompleted;
-                convertColorToPixel(index, &accumulator);
+                convertColorToPixel(index, data.getColorAccum());
             }
         }
     }
@@ -152,50 +147,10 @@ void CameraPictureTaker::calculatePixelColors() {
     std::cout << "100% complete." << std::endl;
 }
 
-void CameraPictureTaker::printImageToFile(std::string &fileName) {
-    using namespace std;
-    ofstream file;
-    file.open(fileName, std::ofstream::out | std::ofstream::ate);
-    string header = "P3\n" + to_string(m_width) + " " + to_string(m_height) + "\n255\n";
-    file << header;
-
-    for (int i = m_height - 1; i > -1; --i) {
-        for (int j = m_width - 1; j > -1; --j) {
-            file << m_pixels[i * m_width + j] + " ";
-        }
-        file << '\n';
-    }
-}
-
-void CameraPictureTaker::convertColorToPixel(int &pixelIndex, Eigen::Vector3d *color) {
-    std::string sr;
-    std::string sg;
-    std::string sb;
-    std::ostringstream strs;
-
-    int red = std::max(0, std::min(255, (int) round(255.0 * (*color)(0))));
-    int green = std::max(0, std::min(255, (int) round(255.0 * (*color)(1))));
-    int blue = std::max(0, std::min(255, (int) round(255.0 * (*color)(2))));
-    strs << red;
-    sr = strs.str();
-    strs.str("");
-    strs.clear();
-
-    strs << green;
-    sg = strs.str();
-    strs.str("");
-    strs.clear();
-
-    strs << blue;
-    sb = strs.str();
-    strs.str("");
-    strs.clear();
-
-    m_pixels[pixelIndex] = sr + " " + sg + " " + sb;
-}
-
-void CameraPictureTaker::rayTrace(Eigen::Vector3d rayStart, Eigen::Vector3d rayDirection, Eigen::Vector3d refatt, Eigen::Vector3d* accumulator,  int level) {
-    if(refatt.isZero(.0001)) {
+void CameraPictureTaker::rayTrace(RayTraceData& data) {
+    data.getColor()->setZero();
+    data.getAttenuation()->setConstant(1);
+    if(data.getReflectAccum()->isZero(.0001)) {
         return;
     }
 
@@ -206,10 +161,6 @@ void CameraPictureTaker::rayTrace(Eigen::Vector3d rayStart, Eigen::Vector3d rayD
     Eigen::Matrix<double, 3, 3> solve2;
     Eigen::Matrix<double, 3, 3> solve3;
     Eigen::Matrix<double, 3, 1> aMinusStart;
-    m_normalVector << 0, 0, 0;
-    m_pointToCameraV << 0, 0, 0;
-    m_attenuation << 1, 1, 1;
-    m_color << 0, 0, 0;
     const Sphere* hitSphere;
 
     Eigen::Vector3d tV;
@@ -227,8 +178,8 @@ void CameraPictureTaker::rayTrace(Eigen::Vector3d rayStart, Eigen::Vector3d rayD
 
     //for every sphere
     for (int k = 0; k < m_spheres->size(); ++k) {
-        tV = *m_spheres->at(k).getCenterPoint() - rayStart;
-        double v = tV.dot(rayDirection);
+        tV = *m_spheres->at(k).getCenterPoint() - *data.getRayStart();
+        double v = tV.dot(*data.getRayDirection());
         double csq = tV.dot(tV);
 
         double radius = m_spheres->at(k).getRadius();
@@ -267,9 +218,9 @@ void CameraPictureTaker::rayTrace(Eigen::Vector3d rayStart, Eigen::Vector3d rayD
 
             solvingMatrix.col(1) = *curTri->getAVector() - *curTri->getCVector();
 
-            solvingMatrix.col(2) = rayDirection.col(0);
+            solvingMatrix.col(2) = data.getRayDirection()->col(0);
 
-            aMinusStart = *curTri->getAVector() - rayStart;
+            aMinusStart = *curTri->getAVector() - *data.getRayStart();
 
             solve1 = solvingMatrix;
             solve1.col(0) = aMinusStart.col(0);
@@ -314,50 +265,117 @@ void CameraPictureTaker::rayTrace(Eigen::Vector3d rayStart, Eigen::Vector3d rayD
 
     }
 
-    Eigen::Vector3d intersectionPoint;
     if(didHitTriangle){
-        processHitTriangle(hitTriangle, t, rayStart, rayDirection, intersectionPoint);
+        processHitTriangle(hitTriangle, t, data);
     }
     if(didHitSphere){
-        processHitSphere(sphereHitIndex, t, rayStart, rayDirection, intersectionPoint);
+        processHitSphere(sphereHitIndex, t, data);
     }
 
     if(hasHitYet){
         //we hit a point
-        if(level > 0){
-            Eigen::Vector3d reflectionRay = (2 * m_normalVector.dot(m_pointToCameraV) * m_normalVector) - m_pointToCameraV;
+        if(data.level > 0){
+            Eigen::Vector3d reflectionRay = (2 * data.getNormalVector()->dot(*data.getPointToCameraV()) * *data.getNormalVector()) - *data.getPointToCameraV();
             reflectionRay.normalize();
-            if(didHitSphere){
-                *accumulator +=  refatt.cwiseProduct(m_color.cwiseProduct(*hitSphere->getOpacity()));
 
-                refatt = m_attenuation.cwiseProduct(refatt);
-                Eigen::Vector3d newAccumulator;
-                newAccumulator << 0, 0, 0;
-                rayTrace(intersectionPoint, reflectionRay, refatt, &newAccumulator, level-1);
-                *accumulator += newAccumulator.cwiseProduct(*hitSphere->getOpacity());
+            *data.getRayStart() = *data.getIntersectionPoint();
+
+            //Values are saved in case refraction is required in the end.
+            Eigen::Vector3d tempDirection = *data.getRayDirection();
+            Eigen::Vector3d tempStart = *data.getRayStart();
+            Eigen::Vector3d tempReflectAccum = *data.getReflectAccum();
+
+            if(didHitSphere){
+                *data.getColorAccum() +=  data.getReflectAccum()->cwiseProduct(data.getColor()->cwiseProduct(*hitSphere->getOpacity()));
+
+                *data.getReflectAccum() = data.getAttenuation()->cwiseProduct(*data.getReflectAccum());
+                Eigen::Vector3d tempColorAccum;
+                tempColorAccum = *data.getColorAccum();
+                data.getColorAccum()->setZero();
+
+                --data.level;
+                *data.getRayDirection() = reflectionRay;
+                rayTrace(data);
+
+                tempColorAccum += data.getColorAccum()->cwiseProduct(*hitSphere->getOpacity());
+                *data.getColorAccum() = tempColorAccum;
             }else {
-                *accumulator += refatt.cwiseProduct(m_color);
-                refatt = m_attenuation.cwiseProduct(refatt);
-                m_color << 0, 0, 0;
-                rayTrace(intersectionPoint, reflectionRay, refatt, accumulator,  level-1);
+                *data.getColorAccum() += data.getReflectAccum()->cwiseProduct(*data.getColor());
+                *data.getReflectAccum() = data.getAttenuation()->cwiseProduct(*data.getReflectAccum());
+                data.getColor()->setZero();
+
+                --data.level;
+                *data.getRayDirection() = reflectionRay;
+                rayTrace(data);
             }
 
             if(didHitSphere && m_spheres->at(sphereHitIndex).getOpacitySum() < 3.0){
-                rayDirection = -rayDirection;
-                if(refract(&intersectionPoint, &rayDirection, hitSphere, hitSphere->getRefractionIndex() , 1.0)){
-                    Eigen::Vector3d newAccumulator;
-                    newAccumulator << 0, 0, 0;
-                    rayTrace(intersectionPoint, rayDirection, refatt, &newAccumulator, level-1);
+                tempDirection = -tempDirection;
+                if(refract(&tempStart, &tempDirection, hitSphere, hitSphere->getRefractionIndex() , 1.0)){
+                    Eigen::Vector3d tempColorAccum = *data.getColorAccum();
+                    data.getColorAccum()->setZero();
+
+                    --data.level;
+                    *data.getRayDirection() = tempDirection;
+                    *data.getRayStart() = tempStart;
+                    *data.getReflectAccum() = tempReflectAccum;
+                    rayTrace(data);
+
+                    *data.getReflectAccum() = tempReflectAccum;
+
                     Eigen::Vector3d temp;
-                    temp << 1, 1, 1;
-                    *accumulator += refatt.cwiseProduct(newAccumulator).cwiseProduct(temp - *hitSphere->getOpacity() );
-                    refatt = m_attenuation.cwiseProduct(refatt);
+                    temp.setConstant(1);
+                    tempColorAccum += data.getReflectAccum()->cwiseProduct(*data.getColorAccum()).cwiseProduct(temp - *hitSphere->getOpacity() );
+                    *data.getColorAccum() = tempColorAccum;
+                    *data.getReflectAccum() = data.getAttenuation()->cwiseProduct(*data.getReflectAccum());
                 }
             }
         }else{
-            *accumulator += refatt.cwiseProduct(m_color);
+            *data.getColorAccum() += data.getReflectAccum()->cwiseProduct(*data.getColor());
         }
     }
+}
+
+void CameraPictureTaker::printImageToFile(std::string &fileName) {
+    using namespace std;
+    ofstream file;
+    file.open(fileName, std::ofstream::out | std::ofstream::ate);
+    string header = "P3\n" + to_string(m_width) + " " + to_string(m_height) + "\n255\n";
+    file << header;
+
+    for (int i = m_height - 1; i > -1; --i) {
+        for (int j = m_width - 1; j > -1; --j) {
+            file << m_pixels[i * m_width + j] + " ";
+        }
+        file << '\n';
+    }
+}
+
+void CameraPictureTaker::convertColorToPixel(int &pixelIndex, Eigen::Vector3d *color) {
+    std::string sr;
+    std::string sg;
+    std::string sb;
+    std::ostringstream strs;
+
+    int red = std::max(0, std::min(255, (int) round(255.0 * (*color)(0))));
+    int green = std::max(0, std::min(255, (int) round(255.0 * (*color)(1))));
+    int blue = std::max(0, std::min(255, (int) round(255.0 * (*color)(2))));
+    strs << red;
+    sr = strs.str();
+    strs.str("");
+    strs.clear();
+
+    strs << green;
+    sg = strs.str();
+    strs.str("");
+    strs.clear();
+
+    strs << blue;
+    sb = strs.str();
+    strs.str("");
+    strs.clear();
+
+    m_pixels[pixelIndex] = sr + " " + sg + " " + sb;
 }
 
 bool CameraPictureTaker::rayIntersectsSurface(Eigen::Vector3d *rayStart, Eigen::Vector3d *rayDirection) {
@@ -485,81 +503,80 @@ Eigen::Vector3d CameraPictureTaker::refractRay(Eigen::Vector3d *rayDirection, Ei
 
 }
 
-void CameraPictureTaker::processHitSphere(int index, double t, Eigen::Vector3d &rayStart, Eigen::Vector3d &rayDirection, Eigen::Vector3d& intersectionPoint){
-    intersectionPoint = rayStart + (t * rayDirection);
+void CameraPictureTaker::processHitSphere(int index, double t, RayTraceData& data){
+    *data.getIntersectionPoint() = *data.getRayStart() + (t * *data.getRayDirection());
 
-    m_normalVector = intersectionPoint - *m_spheres->at(index).getCenterPoint();
-    m_normalVector.normalize();
+    *data.getNormalVector() = *data.getIntersectionPoint() - *m_spheres->at(index).getCenterPoint();
+    data.getNormalVector()->normalize();
 
-    m_pointToCameraV = rayStart - intersectionPoint;
-    m_pointToCameraV.normalize();
+    *data.getPointToCameraV() = *data.getRayStart() - *data.getIntersectionPoint();
+    data.getPointToCameraV()->normalize();
 
     //Expected result of the following operation is  <amb1*ka1, amb2*ka2, amb3*ka3>
-    m_color = m_spheres->at(index).getAmbientCoef()->cwiseProduct(m_lighting->getAmbience());
+    *data.getColor() = m_spheres->at(index).getAmbientCoef()->cwiseProduct(m_lighting->getAmbience());
 
-    m_attenuation = m_spheres->at(index).getAttenuationCoef();
+    *data.getAttenuation() = m_spheres->at(index).getAttenuationCoef();
 
     for (auto &l : m_lighting->getLights()) {
         Eigen::Vector3d lightPoint = l.getPosition();
         Eigen::Vector3d lightRGBEmission = l.getRGB();
 
-        Eigen::Vector3d lightToPointV = lightPoint - intersectionPoint;
+        Eigen::Vector3d lightToPointV = lightPoint - *data.getIntersectionPoint();
         lightToPointV.normalize();
 
-        if (m_normalVector.dot(lightToPointV) > 0.0 && !rayIntersectsSurface(&intersectionPoint, &lightToPointV )) {
-            m_color += m_normalVector.dot(lightToPointV) *
+        if (data.getNormalVector()->dot(lightToPointV) > 0.0 && !rayIntersectsSurface(data.getIntersectionPoint(), &lightToPointV )) {
+            *data.getColor() += data.getNormalVector()->dot(lightToPointV) *
                        m_spheres->at(index).getDiffuseCoef()->cwiseProduct(lightRGBEmission);
 
             Eigen::Vector3d specularReflection =
-                    ((2 * m_normalVector.dot(lightToPointV)) * m_normalVector) - lightToPointV;
+                    ((2 * data.getNormalVector()->dot(lightToPointV)) * *data.getNormalVector()) - lightToPointV;
 
-            m_color += (pow(m_pointToCameraV.dot(specularReflection), 50.0) *
+            *data.getColor() += (pow(data.getPointToCameraV()->dot(specularReflection), 50.0) *
                         m_spheres->at(index).getSpecularCoef()->cwiseProduct(lightRGBEmission));
         }
     }
 
 }
 
-void CameraPictureTaker::processHitTriangle(Triangle* hitTriangle, double t, Eigen::Vector3d &rayStart,
-                                            Eigen::Vector3d &rayDirection, Eigen::Vector3d& intersectionPoint) {
-    intersectionPoint = rayStart + (t * rayDirection);
-    m_normalVector = *hitTriangle->getNormalVector();
+void CameraPictureTaker::processHitTriangle(Triangle* hitTriangle, double t, RayTraceData& data) {
+    *data.getIntersectionPoint() = *data.getRayStart() + (t * *data.getRayDirection());
+    *data.getNormalVector() = *hitTriangle->getNormalVector();
 
     //Expected result of the following operation is  <amb1*ka1, amb2*ka2, amb3*ka3>
-    m_color = hitTriangle->getMaterial()->getAmbientCoeff()->cwiseProduct(
+    *data.getColor() = hitTriangle->getMaterial()->getAmbientCoeff()->cwiseProduct(
             m_lighting->getAmbience());
-    m_attenuation = m_specs->getObjAttenuation();
+    *data.getAttenuation() = m_specs->getObjAttenuation();
 
-    m_pointToCameraV = rayStart - intersectionPoint;
-    m_pointToCameraV.normalize();
+    *data.getPointToCameraV() = *data.getRayStart() - *data.getIntersectionPoint();
+    data.getPointToCameraV()->normalize();
 
     for (int l = 0; l < m_lighting->getLights().size(); ++l) {
         Eigen::Vector3d lightPoint = m_lighting->getLights().at(l).getPosition();
         Eigen::Vector3d lightRGBEmission = m_lighting->getLights().at(l).getRGB();
 
         Eigen::Vector3d lightToNormalV =
-                lightPoint - m_normalVector; //unit vector in direction of lightPoint to normalVector
+                lightPoint - *data.getNormalVector(); //unit vector in direction of lightPoint to normalVector
         lightToNormalV.normalize();
 
-        if (m_normalVector.dot(lightToNormalV) < 0)
-            m_normalVector = -(m_normalVector);
+        if (data.getNormalVector()->dot(lightToNormalV) < 0)
+            *data.getNormalVector() = -(*data.getNormalVector());
 
-        if (m_normalVector.dot(lightToNormalV) >= 0.0 && !rayIntersectsSurface(&intersectionPoint, &lightToNormalV )) {
-            if (m_pointToCameraV.dot(m_normalVector) >= 0.0) {
+        if (data.getNormalVector()->dot(lightToNormalV) >= 0.0 && !rayIntersectsSurface(data.getIntersectionPoint(), &lightToNormalV )) {
+            if (data.getPointToCameraV()->dot(*data.getNormalVector()) >= 0.0) {
                 //add diffuse color
-                m_color += m_normalVector.dot(lightToNormalV) *
+                *data.getColor() += data.getNormalVector()->dot(lightToNormalV) *
                            hitTriangle->getMaterial()->getDiffuseCoeff()->cwiseProduct(lightRGBEmission);
             }
 
             Eigen::Vector3d specularReflection =
-                    ((2 * m_normalVector.dot(lightToNormalV)) * m_normalVector) - lightToNormalV;
+                    ((2 * data.getNormalVector()->dot(lightToNormalV)) * *data.getNormalVector()) - lightToNormalV;
 
-            if (m_pointToCameraV.dot(specularReflection) < 0) {
+            if (data.getPointToCameraV()->dot(specularReflection) < 0) {
                 specularReflection << 0.0, 0.0, 0.0;
             }
 
             //add specular color
-            m_color += (pow(m_pointToCameraV.dot(specularReflection), hitTriangle->getMaterial()->getPhong()) *
+            *data.getColor() += (pow(data.getPointToCameraV()->dot(specularReflection), hitTriangle->getMaterial()->getPhong()) *
                         hitTriangle->getMaterial()->getDiffuseCoeff()->cwiseProduct(lightRGBEmission));
 
         }

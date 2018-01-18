@@ -11,6 +11,7 @@
 #include "Ray.h"
 #include "Sphere.h"
 #include "Lighting.h"
+#include "RayTraceData.h"
 
 class CameraPictureTaker {
 private:
@@ -23,11 +24,6 @@ private:
     Eigen::Vector3d m_wVector;
     Eigen::Vector3d m_uVector;
     Eigen::Vector3d m_vVector;
-    Eigen::Vector3d m_attenuation;
-    Eigen::Vector3d m_color;
-
-    Eigen::Vector3d m_normalVector;
-    Eigen::Vector3d m_pointToCameraV;
 
     //Array of pixel distances
     double* m_pixelDistances;
@@ -44,12 +40,11 @@ private:
 
     //Member functions
     void calculatePixelColors();
-    void rayTrace(Eigen::Vector3d rayStart, Eigen::Vector3d rayDirection, Eigen::Vector3d refatt, Eigen::Vector3d* accumulator, int level);
+    void rayTrace(RayTraceData& data);
     Eigen::Vector3d refractRay(Eigen::Vector3d* rayDirection, Eigen::Vector3d* surfaceNormal, double refractionIndexEnter, double refractionIndexExit);
     bool refract(Eigen::Vector3d* rayStart, Eigen::Vector3d* rayDirection, const Sphere* sphere, double refractionIndexEnter, double refractionIndexExit);
-    void processHitSphere(int index, double t, Eigen::Vector3d& rayStart, Eigen::Vector3d& rayDirection, Eigen::Vector3d& intersectionPoint);
-    void processHitTriangle(Triangle* hitTriangle, double t, Eigen::Vector3d& rayStart, Eigen::Vector3d& rayDirection, Eigen::Vector3d& intersectionPoint );
-
+    void processHitSphere(int index, double t, RayTraceData& data);
+    void processHitTriangle(Triangle* hitTriangle, double t, RayTraceData& data);
     void convertColorToPixel(int& pixelIndex, Eigen::Vector3d* color);
     Eigen::Matrix<double, 3, 1>* generatePixelPoint(int row, int col, double offset);
     Eigen::Matrix<double, 3, 1>* generatePixelPoint(int row, int col); //overloaded function for when the offset is zero.
