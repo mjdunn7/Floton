@@ -4,6 +4,7 @@
 
 #include <fstream>
 #include <iostream>
+#include <thread>
 #include "CameraPictureTaker.h"
 #include "Sphere.h"
 #include "Lighting.h"
@@ -86,17 +87,23 @@ Eigen::Matrix<double, 3, 1> *CameraPictureTaker::generatePixelPoint(int row, int
 }
 
 void CameraPictureTaker::calculatePixelColors() {
-    double res = m_height * m_width;
-    double pixelsCompleted = 0;
-    int previousPercentage = 0;
-    int percent;
-    for (int i = m_height - 1; i > -1; --i) {
-        for (int j = m_width - 1; j > -1; --j) {
-            percent = (int) pixelsCompleted/res * 100;
-            if(percent >= previousPercentage + 10){
-                previousPercentage = percent;
-                std::cout << percent << "% complete." << std::endl;
-            }
+    std::vector<std::thread> threads;
+    int chunkSize = m_width/4;
+    
+    std::thread thread1(&CameraPictureTaker::shootRays, this, 0, 1000, 0, 250);
+    std::thread thread2(&CameraPictureTaker::shootRays, this, 0, 1000, 250, 500);
+    std::thread thread3(&CameraPictureTaker::shootRays, this, 0, 1000, 500, 750);
+    std::thread thread4(&CameraPictureTaker::shootRays, this, 0, 1000, 750, 1000);
+
+    thread1.join();
+    thread2.join();
+    thread3.join();
+    thread4.join();
+}
+
+void CameraPictureTaker::shootRays(int heightStart, int heightEnd, int widthStart, int widthEnd){
+    for (int i = heightEnd - 1; i > heightStart -1; --i) {
+        for (int j = widthEnd - 1; j > widthStart -1; --j) {
             int index = i * m_width + j;
 
             if(m_specs->focusOn) {
@@ -124,7 +131,6 @@ void CameraPictureTaker::calculatePixelColors() {
                 }
 
                 delete pixelPoint;
-                ++pixelsCompleted;
                 grandAccumulator = grandAccumulator / m_specs->focusRaysPerPixel;
                 convertColorToPixel(index, &grandAccumulator);
 
@@ -138,13 +144,10 @@ void CameraPictureTaker::calculatePixelColors() {
                 data.level = m_specs->recursionLevel;
                 rayTrace(data);
 
-                ++pixelsCompleted;
                 convertColorToPixel(index, data.getColorAccum());
             }
         }
     }
-
-    std::cout << "100% complete." << std::endl;
 }
 
 void CameraPictureTaker::rayTrace(RayTraceData& data) {

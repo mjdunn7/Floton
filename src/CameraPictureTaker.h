@@ -48,6 +48,7 @@ private:
     void convertColorToPixel(int& pixelIndex, Eigen::Vector3d* color);
     Eigen::Matrix<double, 3, 1>* generatePixelPoint(int row, int col, double offset);
     Eigen::Matrix<double, 3, 1>* generatePixelPoint(int row, int col); //overloaded function for when the offset is zero.
+    void shootRays(int iStart, int iEnd, int jStart, int jEnd);
 
     bool rayIntersectsSurface(Eigen::Vector3d *rayStart, Eigen::Vector3d *rayDirection);
 
