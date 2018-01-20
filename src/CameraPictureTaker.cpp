@@ -87,18 +87,28 @@ Eigen::Matrix<double, 3, 1> *CameraPictureTaker::generatePixelPoint(int row, int
 }
 
 void CameraPictureTaker::calculatePixelColors() {
-    std::vector<std::thread> threads;
-    int chunkSize = m_width/4;
-    
-    std::thread thread1(&CameraPictureTaker::shootRays, this, 0, 1000, 0, 250);
-    std::thread thread2(&CameraPictureTaker::shootRays, this, 0, 1000, 250, 500);
-    std::thread thread3(&CameraPictureTaker::shootRays, this, 0, 1000, 500, 750);
-    std::thread thread4(&CameraPictureTaker::shootRays, this, 0, 1000, 750, 1000);
+    unsigned threadsSupported = std::thread::hardware_concurrency();
+    std::cout << "Ray tracing started. Using " << threadsSupported << " threads." << std::endl;
 
-    thread1.join();
-    thread2.join();
-    thread3.join();
-    thread4.join();
+    std::vector<std::thread*> threads;
+    int chunkSize = m_width/threadsSupported;
+    int start = 0;
+    int end = chunkSize;
+    for(int i = 0; i < threadsSupported; ++i){
+        std::thread* thread = new std::thread(&CameraPictureTaker::shootRays, this, 0, m_height, start, end);
+        start += chunkSize;
+        end += chunkSize;
+        threads.push_back(thread);
+    }
+    
+    for(int i = 0; i < threads.size(); ++i){
+        threads.at(i)->join();
+    }
+
+    int remainingPixels = m_width % threadsSupported;
+    if(remainingPixels != 0){
+        shootRays(0, m_height, m_width - remainingPixels, m_width);
+    }
 }
 
 void CameraPictureTaker::shootRays(int heightStart, int heightEnd, int widthStart, int widthEnd){
