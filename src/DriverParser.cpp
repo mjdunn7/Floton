@@ -10,6 +10,15 @@
 #include "CameraSpecifications.h"
 #include "Sphere.h"
 
+std::string DriverParser::getPathName(const std::string& fileName ){
+    size_t i = fileName.rfind('/', fileName.length());
+    if(i != std::string::npos){
+        return fileName.substr(0, i);
+    }
+
+    return "";
+}
+
 bool DriverParser::parse() {
     std::ifstream file(m_fileName);
 
@@ -59,7 +68,13 @@ bool DriverParser::parse() {
                 t.setXTranslation(stod(m_tokens[6]));
                 t.setYTranslation(stod(m_tokens[7]));
                 t.setZTranslation(stod(m_tokens[8]));
-                t.setFileName(m_tokens[9]);
+
+                std::string path = getPathName(m_fileName);
+                if(path != "") {
+                    t.setFileName(path + "/" + m_tokens[9]);
+                }else{
+                    t.setFileName(m_tokens[9]);
+                }
                 m_transformations.push_back(t);
                 continue;
             }

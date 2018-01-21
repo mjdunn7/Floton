@@ -21,10 +21,10 @@ private:
     std::vector<std::string> m_tokens;
     CameraSpecification m_cSpecs;
     Lighting lighting;
-    std::string m_mtlFileName;
 
     //Member functions
     void tokenize(std::string* line);
+    std::string getPathName(const std::string& fileName );
 
 public:
     DriverParser(std::string& fileName){

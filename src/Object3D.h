@@ -36,6 +36,8 @@ private:
 
     std::map<std::string, Material*> materialMap;
 
+    std::string getPathName(const std::string& fileName );
+
 
 public:
     Object3D(std::string fileName){
