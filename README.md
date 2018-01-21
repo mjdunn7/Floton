@@ -29,6 +29,7 @@ An executable binary file should then appear in the top directory. To render an 
 
 ### Current Capabilities
   * Rendering of spheres and [wavefront obj](https://en.wikipedia.org/wiki/Wavefront_.obj_file) files with triangular faces 
+  * Multithreading support
   * Ambient, specular, and diffuse illumination
   * Reflection
   * Shadows
