@@ -10,7 +10,6 @@
 #include <iostream>
 #include "Material.h"
 
-//TODO: The triangle class is currently a hot mess. Clean it up.
 class Triangle {
 private:
     Eigen::Vector3d m_aVector;

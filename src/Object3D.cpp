@@ -7,10 +7,20 @@
 #include <iostream>
 #include "Object3D.h"
 
+std::string Object3D::getPathName(const std::string& fileName ){
+    size_t i = fileName.rfind('/', fileName.length());
+    if(i != std::string::npos){
+        return fileName.substr(0, i);
+    }
+
+    return "";
+}
+
 bool Object3D::parseFile() {
     using namespace std;
     ifstream file;
     file.open(m_fileName);
+    std::string pathName = getPathName(m_fileName);
 
     if(!file){
         return false;
@@ -66,8 +76,14 @@ bool Object3D::parseFile() {
             }
 
             if (words[0] == "mtllib") {
-                string materialsFileName = words[1];
-                parseMaterialsFile(materialsFileName);
+                if(pathName != ""){
+                    string materialsFileName = pathName + "/" + words[1];
+                    parseMaterialsFile(materialsFileName);
+                } else{
+                    string materialsFileName = words[1];
+                    parseMaterialsFile(materialsFileName);
+                }
+
                 continue;
             }
 
