@@ -1,5 +1,9 @@
 # Floton, a simple C++ Ray-Tracer
 
+<p align="center">
+<img src="https://static1.squarespace.com/static/5a4eaf126957da87f6d3de00/t/5a4eb48fe2c4837fbba347f2/1515107560454/CircularRealityWithDoF.png?format=2500w" width="50%" >
+</p>
+
 ### Introduction
 
 Floton (pronounced flow-ton, rhymes with photon) is a simple, lightweight, CPU ray tracer written in C++. In the project's current state, it is best used as educational tool for those looking to learn more about how a ray tracer works by exploring the source code, but more fancy features will hopefully be added soon.
