@@ -13,7 +13,7 @@ Floton uses a technique called ray tracing to render realistic graphical images.
 
 Currently, images can only be outputted in [ppm format](https://en.wikipedia.org/wiki/Netpbm_format), an ascii based image encoding that is very simple but produces very large file sizes. Additional image formats may be supported in the future.
 
-### Getting Started
+### Getting Started (Linux)
 To use, first download the source code from GitHub to your local machine:
 ```
 git clone https://github.com/mjdunn7/Floton.git
